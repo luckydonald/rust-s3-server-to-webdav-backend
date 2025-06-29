@@ -7,6 +7,7 @@ pub mod chunk_to_raw;
 pub mod request_guards;
 pub mod ioutil;
 pub mod states;
+mod environment;
 
 use asyncio_utils::LimitSeekerReader;
 use lazy_static::__Deref;
@@ -30,6 +31,7 @@ extern crate log;
 use log::{info, debug, warn, error, trace};
 
 use rocket::State;
+use crate::environment::Config;
 
 #[derive(FromForm, Debug)]
 struct ListQuery {
@@ -624,6 +626,10 @@ pub fn setup_logger(log_conf_file: &str) -> Result<(), Box<dyn Error>> {
 fn rocket() -> _ {
     use clap::Parser;
     let args = CliArg::parse();
+
+    let config = Config::from_env().expect("Failed to load config from environment");
+    println!("Secret key: {}", config.secret_key);
+    println!("File provider: {}", config.file_provider);
 
     setup_logger(args.log4rs_config_file()).unwrap();
     //trace!("I AM TRACE");
