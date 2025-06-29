@@ -37,6 +37,18 @@ response = s3.get_object(Bucket=BUCKET_NAME, Key=OBJECT_KEY)
 content = response['Body'].read().decode('utf-8')
 print(f"Read from '{OBJECT_KEY}': {content}")
 
+
+# === List all buckets ===
+print("Buckets:")
+buckets = s3.list_buckets()
+for bucket in buckets['Buckets']:
+    print(f"{bucket['Name']}: {bucket!r}")
+
+# === List objects in bucket ===
+print(f"Objects in bucket '{BUCKET_NAME}':")
+objects = s3.list_objects_v2(Bucket=BUCKET_NAME)
+for obj in objects.get('Contents', []):
+    print(f"{obj['Key']}: {obj!r}")
 input()
 
 # === Delete file ===
