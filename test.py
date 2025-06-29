@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from botocore.client import Config
 
 # === Configuration ===
-S3_ENDPOINT = 'http://localhost:8000'  # Replace with your S3-compatible server
+S3_ENDPOINT = 'http://localhost:8001'  # Replace with your S3-compatible server
 ACCESS_KEY = 'your-access-key'
 SECRET_KEY = 'your-secret-key'
 BUCKET_NAME = 'test'
