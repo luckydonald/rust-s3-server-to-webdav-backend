@@ -1,6 +1,12 @@
+use aws_sigv4::sign::v4::generate_signing_key as generate_signing_key_v4;
+// use aws_sigv4::sign::v4a::generate_signing_key as generate_signing_key_v4a;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Data, Request, Response};
+use rocket::http::HeaderMap;
 use ubyte::ToByteUnit;
+use crate::date_utils::parse_date_str;
+use crate::environment::Config;
+use crate::header_utils::get_date;
 
 /// Fairing for timing requests.
 pub struct HmacChecker;
@@ -18,6 +24,8 @@ impl Fairing for HmacChecker {
         }
     }
 
+
+
     /// Stores the start time of the request in request-local state.
     async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
         // Store a `HmacCheckResult` instead of directly storing a `SystemTime`
@@ -25,18 +33,34 @@ impl Fairing for HmacChecker {
         // that might store a `SystemTime` in request-local cache.
         let mut payload = b"";
         // Peek at the first 512 bytes of the request body, if that's already enough.
+        let date = get_date(
+            request.headers(),
+            request.query_fields().collect::<Vec<_>>(),
+        );
         if data.peek_complete() {
             payload = <&[u8; 0]>::try_from(data.peek(512).await).unwrap();
-        } else { 
+        } else {
             // If the body is not complete, we can only peek at the first 512 bytes.
             let stream = data.open(5.gibibytes());
             payload = stream.into_bytes()
                 .await
                 .unwrap_or_else(|_| b"")
             ;
-            
         }
-        
+        let env = Config::from_env().expect("Failed to load config from environment");
+        let v4_expected = generate_signing_key_v4(
+            env.aws_secret_key.as_str(),
+            date,
+            env.aws_region.as_str(),
+            env.aws_service.as_str(),
+        );
+        /* let v4a_expected = generate_signing_key_v4a(
+            env.aws_secret_key.as_str(),
+            time,
+            env.aws_region.as_str(),
+            "aws4_request",
+        );*/
+
         request.local_cache(|| HmacCheckResult(true));
     }
 

@@ -78,43 +78,42 @@ const SIGV4_SIGNATURE_LEN: usize = 64;
 
 
 pub(crate) fn get_date(headers: &HeaderMap, query: Vec<ValueField>) -> Result<DateTime<Utc>, SignatureError> {
-        // It turns out that unrolling this logic is the most straightforward way to return sensible error messages.
+    // It turns out that unrolling this logic is the most straightforward way to return sensible error messages.
 
-        match get_query_param_one(query, X_AMZ_DATE) {
-            Ok(date_str) => parse_date_str(
-                &date_str,
-                SignatureError::MalformedParameter {
-                    message: "X-Amz-Date is not a valid timestamp".to_string(),
-                },
-            ),
-            Err(e) => match e {
-                SignatureError::MissingParameter {
-                    ..
-                } => match self.get_header_one(X_AMZ_DATE_LOWER) {
-                    Ok(date_str) => parse_date_str(
-                        &date_str,
-                        SignatureError::MalformedHeader {
-                            message: "X-Amz-Date is not a valid timestamp".to_string(),
-                        },
-                    ),
-                    Err(e) => match e {
-                        SignatureError::MissingHeader {
-                            ..
-                        } => match self.get_header_one(DATE) {
-                            Ok(date_str) => parse_date_str(
-                                &date_str,
-                                SignatureError::MalformedHeader {
-                                    message: "Date is not a valid timestamp".to_string(),
-                                },
-                            ),
-                            Err(e) => Err(e),
-                        },
-                        _ => Err(e),
-                    },
-                },
-                _ => Err(e),
+    match get_query_param_one(query, X_AMZ_DATE) {
+        Ok(date_str) => parse_date_str(
+            &date_str,
+            SignatureError::MalformedParameter {
+                message: "X-Amz-Date is not a valid timestamp".to_string(),
             },
-        }
+        ),
+        Err(e) => match e {
+            SignatureError::MissingParameter {
+                ..
+            } => match get_header_one(headers, X_AMZ_DATE_LOWER) {
+                Ok(date_str) => parse_date_str(
+                    &date_str,
+                    SignatureError::MalformedHeader {
+                        message: "X-Amz-Date is not a valid timestamp".to_string(),
+                    },
+                ),
+                Err(e) => match e {
+                    SignatureError::MissingHeader {
+                        ..
+                    } => match get_header_one(headers, DATE) {
+                        Ok(date_str) => parse_date_str(
+                            &date_str,
+                            SignatureError::MalformedHeader {
+                                message: "Date is not a valid timestamp".to_string(),
+                            },
+                        ),
+                        Err(e) => Err(e),
+                    },
+                    _ => Err(e),
+                },
+            },
+            _ => Err(e),
+        },
     }
 }
 
@@ -128,9 +127,8 @@ pub(crate) fn get_date(headers: &HeaderMap, query: Vec<ValueField>) -> Result<Da
 /// If the header contains multiple values, a `SignatureError::MultipleHeaderValues` error is returned.
 ///
 /// If the header value is not valid UTF-8, a `SignatureError::MalformedHeader` error is returned.
-pub(crate) fn get_header_one<S: Into<String>>(&self, header: S) -> Result<String, SignatureError> {
-    let header = header.into();
-    let mut iter = self.headers.get_all(&header).iter();
+pub(crate) fn get_header_one(headers: &HeaderMap, header: &str) -> Result<String, SignatureError> {
+    let mut iter = headers.get(header);
     match iter.next() {
         None => Err(SignatureError::MissingHeader {
             header: header.to_string(),
