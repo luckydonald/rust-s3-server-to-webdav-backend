@@ -7,7 +7,8 @@ pub mod chunk_to_raw;
 pub mod request_guards;
 pub mod ioutil;
 pub mod states;
-mod environment;
+pub mod environment;
+pub mod uriutils;
 
 use asyncio_utils::LimitSeekerReader;
 use lazy_static::__Deref;
