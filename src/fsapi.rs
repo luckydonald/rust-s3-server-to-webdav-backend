@@ -234,7 +234,7 @@ pub struct FileMeta {
 }
 
 impl Bucket {
-    pub const META_SUFFIX:&str = "@@META@@";
+    pub const META_SUFFIX:&str = ".@@META@@.json";
     pub fn from(path: &str, staging_path:&str, seq:Arc<sequencing::Sequence>) -> Result<Bucket, Box<dyn Error>> {
         let pathb = PathBuf::from(path);
         let pathbx = pathb.canonicalize()?;
