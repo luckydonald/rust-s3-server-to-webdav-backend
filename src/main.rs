@@ -8,7 +8,6 @@ pub mod request_guards;
 pub mod ioutil;
 pub mod states;
 pub mod environment;
-pub mod uriutils;
 pub mod request_fairings;
 pub mod date_utils;
 pub mod header_utils;

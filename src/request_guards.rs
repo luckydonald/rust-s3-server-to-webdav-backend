@@ -5,7 +5,6 @@ use rocket::{request::FromRequest, http::Status};
 use scratchstack_aws_signature::{sigv4_verify, Request as VerifyRequestSignatureParams, SigningKey, SigningKeyKind};
 use crate::environment::Config;
 use http::{ Uri, };
-use crate::uriutils;
 
 #[derive(Debug, Clone)]
 pub struct RangeHeader {
@@ -392,6 +391,7 @@ pub enum AuthError {
     NoKeySupplied,
     InvalidKey,
     InvalidSignature,
+    ServerMisconfiguration,
 }
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthCheckPassed {
@@ -401,37 +401,15 @@ impl<'r> FromRequest<'r> for AuthCheckPassed {
         rocket::request::Outcome<Self, Self::Error> {
         let api_key = request.headers().get_one("authorisation");
         // AWS4-HMAC-SHA256 Credential=your-access-key/20250629/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=0b695bbe66f1a2abb49893ad524a52acaaba2353ef0c38c7b13705b009131844
-        let config = Config::from_env().expect("Failed to load config from environment");
-        let http_req = uriutils::convert_rocket_request_to_http(request);
-        let sign_req = VerifyRequestSignatureParams::from_http_request_parts(&http_req.into_parts().0, None);
-        println!("Secret key: {}", config.aws_secret_key);  // TODO: Remove in production
+        let config = Config::from_env();
+        if config.is_err() {
+            return rocket::request::Outcome::Failure((Status::InternalServerError, AuthError::ServerMisconfiguration));
+        }
+        let env = config.unwrap();
         if api_key.is_none() {
             return rocket::request::Outcome::Failure((Status::Forbidden, AuthError::NoKeySupplied));
         }
-
-        // Extract the signature from the request (example assumes header, adjust as needed)
-        let signature = api_key.unwrap();
-        let get_signing_key_req = sign_req.to_get_signing_key_request(
-            SigningKeyKind::KSigning, config.aws_region, config.aws_service).unwrap();
-        let signing_key = SigningKey {
-            kind: SigningKeyKind::KSecret,
-            key: config.aws_secret_key.as_bytes().to_vec()
-        };
-        let signing_key = signing_key.try_derive(
-            get_signing_key_req.signing_key_kind,
-            &get_signing_key_req.request_date,
-            &get_signing_key_req.region, &get_signing_key_req.service
-        ).unwrap();
-
-
-        // Example verification (uncomment and adapt when ready)
-        let is_valid = sigv4_verify(
-            &sign_req,
-            &signing_key,
-            None,
-            &get_signing_key_req.region,
-            &get_signing_key_req.service,
-        ).is_ok();
+        let is_valid = false;
 
         if is_valid {
             rocket::request::Outcome::Success(AuthCheckPassed)

@@ -6,14 +6,13 @@ use rocket::http::HeaderMap;
 use ubyte::ToByteUnit;
 use crate::date_utils::parse_date_str;
 use crate::environment::Config;
-use crate::header_utils::get_date;
+use crate::header_utils::{get_date, get_header_one};
 
 /// Fairing for timing requests.
 pub struct HmacChecker;
 
 /// Value stored in request-local state.
-#[derive(Copy, Clone)]
-struct HmacCheckResult(bool);
+struct HmacCheckResult(str);
 
 #[rocket::async_trait]
 impl Fairing for HmacChecker {
@@ -27,7 +26,7 @@ impl Fairing for HmacChecker {
 
 
     /// Stores the start time of the request in request-local state.
-    async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
+    async fn on_request(&self, request: &mut Request<'_>, data: Data<'_>) {
         // Store a `HmacCheckResult` instead of directly storing a `SystemTime`
         // to ensure that this usage doesn't conflict with anything else
         // that might store a `SystemTime` in request-local cache.
@@ -37,16 +36,12 @@ impl Fairing for HmacChecker {
             request.headers(),
             request.query_fields().collect::<Vec<_>>(),
         );
-        if data.peek_complete() {
-            payload = <&[u8; 0]>::try_from(data.peek(512).await).unwrap();
-        } else {
-            // If the body is not complete, we can only peek at the first 512 bytes.
-            let stream = data.open(5.gibibytes());
-            payload = stream.into_bytes()
-                .await
-                .unwrap_or_else(|_| b"")
-            ;
-        }
+        // If the body is not complete, we can only peek at the first 512 bytes.
+        let stream = data.open(5.gibibytes());
+        payload = stream.into_bytes()
+            .await
+            .unwrap_or_else(|_| b"")
+        ;
         let env = Config::from_env().expect("Failed to load config from environment");
         let v4_expected = generate_signing_key_v4(
             env.aws_secret_key.as_str(),

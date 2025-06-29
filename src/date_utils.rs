@@ -120,16 +120,16 @@ impl ParseISO8601<DateTime<FixedOffset>> for DateTime<FixedOffset> {
     }
 }
 
-pub(crate) fn parse_date_str<E>(date_str: &str, e: E) -> Result<DateTime<Utc>, E>
+pub(crate) fn parse_date_str<E>(date_str: &str, e: E) -> Result<std::time::SystemTime, E>
 where
     E: Error + 'static,
 {
     if let Ok(ref d) = DateTime::parse_from_rfc2822(date_str) {
-        Ok(d.with_timezone(&Utc))
+        Ok(d.with_timezone(&Utc).into())
     } else if let Ok(ref d) = DateTime::parse_from_rfc3339(date_str) {
-        Ok(d.with_timezone(&Utc))
+        Ok(d.with_timezone(&Utc).into())
     } else if let Ok(ref d) = DateTime::parse_from_iso8601(date_str) {
-        Ok(d.with_timezone(&Utc))
+        Ok(d.with_timezone(&Utc).into())
     } else {
         Err(e)
     }
