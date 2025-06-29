@@ -9,6 +9,7 @@ pub mod ioutil;
 pub mod states;
 pub mod environment;
 pub mod uriutils;
+pub mod request_fairings;
 
 use asyncio_utils::LimitSeekerReader;
 use lazy_static::__Deref;

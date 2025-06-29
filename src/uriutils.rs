@@ -39,7 +39,7 @@ pub(crate) fn convert_rocket_request_to_http(rocket_request: &RocketRequest) -> 
     let body = rocket_request.body().data().await.unwrap();
     let http_request = http_request.body(body);
     http_request;
-    
+
     // Build and return the HTTP request
     // http_request.body(Vec::new()).unwrap() // Replace Vec::new() with actual body if needed
 }
