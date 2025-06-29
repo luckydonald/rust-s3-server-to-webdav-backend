@@ -2,6 +2,7 @@
 // https://github.com/dacut/scratchstack-aws-signature/blob/68ea0b465e9e7b7ee686914de486d9229b8f0253/src/chronoutil.rs
 // which is licensed under MIT License, Copyright (c) 2021 David Cuthbert.
 
+use std::time::SystemTime;
 use {
     chrono::{
         format::{ParseError, ParseResult},
@@ -120,7 +121,7 @@ impl ParseISO8601<DateTime<FixedOffset>> for DateTime<FixedOffset> {
     }
 }
 
-pub(crate) fn parse_date_str<E>(date_str: &str, e: E) -> Result<std::time::SystemTime, E>
+pub(crate) fn parse_date_str<E>(date_str: &str, e: E) -> Result<SystemTime, E>
 where
     E: Error + 'static,
 {

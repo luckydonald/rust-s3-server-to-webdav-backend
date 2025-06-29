@@ -36,7 +36,7 @@ impl Fairing for HmacChecker {
         let date = get_date(
             request.headers(),
             request.query_fields().collect::<Vec<_>>(),
-        );
+        ).unwrap();
         let mut stream = data.open(5.gibibytes());
         // If the body is not complete, we can only peek at the first 512 bytes.
         payload = stream.into_bytes()

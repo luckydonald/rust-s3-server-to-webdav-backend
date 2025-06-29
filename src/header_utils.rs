@@ -4,6 +4,7 @@ use std::arch::aarch64::vceqz_f32;
 // which is licensed under MIT License, Copyright (c) 2021 David Cuthbert.
 use std::collections::HashMap;
 use std::str::from_utf8;
+use std::time::SystemTime;
 use rocket::form::ValueField;
 use rocket::http::HeaderMap;
 use scratchstack_aws_signature::{normalize_uri_path_component, SignatureError};
@@ -77,7 +78,7 @@ const X_AMZ_SIGNEDHEADERS: &str = "X-Amz-SignedHeaders";
 const SIGV4_SIGNATURE_LEN: usize = 64;
 
 
-pub(crate) fn get_date(headers: &HeaderMap, query: Vec<ValueField>) -> Result<DateTime<Utc>, SignatureError> {
+pub(crate) fn get_date(headers: &HeaderMap, query: Vec<ValueField>) -> Result<SystemTime, SignatureError> {
     // It turns out that unrolling this logic is the most straightforward way to return sensible error messages.
 
     match get_query_param_one(query, X_AMZ_DATE) {
