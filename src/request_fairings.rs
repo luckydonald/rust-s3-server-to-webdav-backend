@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 use aws_sigv4::sign::v4::generate_signing_key as generate_signing_key_v4;
 // use aws_sigv4::sign::v4a::generate_signing_key as generate_signing_key_v4a;
 use rocket::fairing::{Fairing, Info, Kind};
@@ -26,7 +27,7 @@ impl Fairing for HmacChecker {
 
 
     /// Stores the start time of the request in request-local state.
-    async fn on_request(&self, request: &mut Request<'_>, data: Data<'_>) {
+    async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
         // Store a `HmacCheckResult` instead of directly storing a `SystemTime`
         // to ensure that this usage doesn't conflict with anything else
         // that might store a `SystemTime` in request-local cache.
@@ -36,8 +37,8 @@ impl Fairing for HmacChecker {
             request.headers(),
             request.query_fields().collect::<Vec<_>>(),
         );
+        let mut stream = data.open(5.gibibytes());
         // If the body is not complete, we can only peek at the first 512 bytes.
-        let stream = data.open(5.gibibytes());
         payload = stream.into_bytes()
             .await
             .unwrap_or_else(|_| b"")
