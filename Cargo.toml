@@ -27,6 +27,7 @@ futures = "0.3"
 log = "0.4"
 log4rs = { version="1.2.0", features = ["gzip", "background_rotation"] }
 asyncio-utils = "0.4"
+scratchstack-aws-signature = "0.10.6"
 
 [[bin]]
 name="rusts3"

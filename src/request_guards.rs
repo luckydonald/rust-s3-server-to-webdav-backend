@@ -2,6 +2,8 @@ use std::convert::Infallible;
 use lazy_static::lazy_static;
 use regex::Regex;
 use rocket::{request::FromRequest, http::Status};
+use scratchstack_aws_signature::http_request::SignatureLocation;
+use scratchstack_aws_signature::verify::{verify_request_signature, VerifyRequestSignatureParams};
 
 #[derive(Debug, Clone)]
 pub struct RangeHeader {
@@ -395,15 +397,35 @@ impl<'r> FromRequest<'r> for AuthCheckPassed {
     
     async fn from_request(request: &'r rocket::Request<'_>) ->
         rocket::request::Outcome<Self, Self::Error> {
-        let api_key = request.headers().get_one("x-api-key");
-        if api_key.is_some() {
-            if api_key.unwrap() == "secret" {
-                return rocket::request::Outcome::Success(AuthCheckPassed);
-            } else {
-                return rocket::request::Outcome::Failure((Status::Forbidden, AuthError::InvalidKey));
-            }
-        } else {
+        let api_key = request.headers().get_one("authorisation");
+        if api_key.is_none() {
             return rocket::request::Outcome::Failure((Status::Forbidden, AuthError::NoKeySupplied));
+            }
+    
+        // Extract the signature from the request (example assumes header, adjust as needed)
+        let signature = api_key.unwrap();
+    
+        // Prepare parameters for signature verification
+        let params = VerifyRequestSignatureParams {
+            signature_location: SignatureLocation::Header,
+            // Fill in the rest of the required fields as needed
+            ..Default::default()
+        };
+    
+        // Convert Rocket request to http::Request if needed
+        // (You may need to adapt this part to your actual request extraction)
+        // let http_request = ...;
+    
+        // For demonstration, assume verification always fails
+        let is_valid = false; // Replace with actual verification logic
+    
+        // Example verification (uncomment and adapt when ready)
+        // let is_valid = verify_request_signature(&http_request, &params).is_ok();
+    
+        if is_valid {
+            rocket::request::Outcome::Success(AuthCheckPassed)
+        } else {
+            rocket::request::Outcome::Failure((Status::Forbidden, AuthError::InvalidSignature))
         }
     }
 }

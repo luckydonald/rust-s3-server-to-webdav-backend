@@ -573,7 +573,10 @@ async fn backdoor(secret_token:String,
 
 
 #[get("/")]
-async fn list_all_buckets<'r>(fs:&State<FS>) -> Result<S3Response<'r>, Debug<Box<dyn Error>>> {
+async fn list_all_buckets<'r>(
+    fs:&State<FS>,
+    #[allow(unused)] auth:AuthCheckPassed,
+) -> Result<S3Response<'r>, Debug<Box<dyn Error>>> {
     let action = "list_all_buckets";
     let mut buckets = String::new();
     let bucket_list = fs.get_all_buckets();
