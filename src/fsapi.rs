@@ -806,6 +806,52 @@ impl Bucket {
 
 }
 
+/// Trait for storage backend abstraction.
+pub trait StorageBackend: Send + Sync {
+    fn make_bucket(&self, bucket: &str) -> Result<Bucket, Box<dyn Error>>;
+    fn get_bucket(&self, name: &str) -> Option<Bucket>;
+    fn get_all_buckets(&self) -> HashMap<String, Bucket>;
+    fn delete_object(&self, bucket: &str, key: &str) -> bool;
+    fn read_object(&self, bucket: &str, key: &str) -> Result<std::fs::File, Box<dyn Error>>;
+    fn get_object_meta(&self, bucket: &str, key: &str) -> Result<FileMeta, Box<dyn Error>>;
+    // ...add other methods as needed...
+}
+
+// Implement StorageBackend for FS (filesystem)
+impl StorageBackend for FS {
+    fn make_bucket(&self, bucket: &str) -> Result<Bucket, Box<dyn Error>> {
+        self.make_bucket(bucket)
+    }
+    fn get_bucket(&self, name: &str) -> Option<Bucket> {
+        self.get_bucket(name)
+    }
+    fn get_all_buckets(&self) -> HashMap<String, Bucket> {
+        self.get_all_buckets()
+    }
+    fn delete_object(&self, bucket: &str, key: &str) -> bool {
+        if let Some(b) = self.get_bucket(bucket) {
+            b.delete_object(key)
+        } else {
+            false
+        }
+    }
+    fn read_object(&self, bucket: &str, key: &str) -> Result<std::fs::File, Box<dyn Error>> {
+        if let Some(b) = self.get_bucket(bucket) {
+            b.read_object(key)
+        } else {
+            Err(S3FSError::bucket_not_found(bucket).boxed())
+        }
+    }
+    fn get_object_meta(&self, bucket: &str, key: &str) -> Result<FileMeta, Box<dyn Error>> {
+        if let Some(b) = self.get_bucket(bucket) {
+            b.get_object_meta(key)
+        } else {
+            Err(S3FSError::bucket_not_found(bucket).boxed())
+        }
+    }
+    // ...implement other methods as needed...
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum FileType {
     Uninitialized,
