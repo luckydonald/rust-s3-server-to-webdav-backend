@@ -47,6 +47,9 @@ const ISO8601_COMPACT_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 /// SHA-256 of an empty string.
 const SHA256_EMPTY: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
+/// SHA-256 of "UNSIGNED-PAYLOAD"
+const SHA256_UNSIGNED_PAYLOAD: &str = "438d4109ef0d676b8c2c7ed13cdfcb418e494d53b843d4634ce3b1085f07bb96";
+
 /// Signature field for the signature itself
 const SIGNATURE: &str = "Signature";
 

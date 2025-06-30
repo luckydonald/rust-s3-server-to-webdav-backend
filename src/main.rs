@@ -11,6 +11,7 @@ pub mod environment;
 pub mod request_fairings;
 pub mod date_utils;
 pub mod header_utils;
+mod utils;
 
 use asyncio_utils::LimitSeekerReader;
 use lazy_static::__Deref;

@@ -1,10 +1,11 @@
 use std::ops::{Deref, DerefMut};
 use aws_sigv4::sign::v4::generate_signing_key as generate_signing_key_v4;
-// use aws_sigv4::sign::v4a::generate_signing_key as generate_signing_key_v4a;
+#[cfg(feature = "sig4a")]
+use aws_sigv4::sign::v4a::generate_signing_key as generate_signing_key_v4a;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Data, Request, Response};
+use rocket::data::ToByteUnit;
 use rocket::http::HeaderMap;
-use ubyte::ToByteUnit;
 use crate::date_utils::parse_date_str;
 use crate::environment::Config;
 use crate::header_utils::{get_date, get_header_one};
@@ -24,25 +25,22 @@ impl Fairing for HmacChecker {
         }
     }
 
-
-
     /// Stores the start time of the request in request-local state.
     async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
         // Store a `HmacCheckResult` instead of directly storing a `SystemTime`
         // to ensure that this usage doesn't conflict with anything else
         // that might store a `SystemTime` in request-local cache.
         let mut payload = b"";
-        // Peek at the first 512 bytes of the request body, if that's already enough.
         let date = get_date(
             request.headers(),
             request.query_fields().collect::<Vec<_>>(),
         ).unwrap();
-        let mut stream = data.open(5.gibibytes());
-        // If the body is not complete, we can only peek at the first 512 bytes.
-        payload = stream.into_bytes()
-            .await
-            .unwrap_or_else(|_| b"")
-        ;
+        // Because rocket is a dumbfuck, we can only parse the first 512 bytes AT ALL.
+        // Amazon specs that the body can be up to 5GB, so I guess fuck you, rocket.
+        // Also of cause that 512 is not configurable,
+        // and to put oil into the fire that constant is private.
+        let body = data.peek(usize::MAX).await;
+
         let env = Config::from_env().expect("Failed to load config from environment");
         let v4_expected = generate_signing_key_v4(
             env.aws_secret_key.as_str(),
@@ -50,13 +48,16 @@ impl Fairing for HmacChecker {
             env.aws_region.as_str(),
             env.aws_service.as_str(),
         );
-        /* let v4a_expected = generate_signing_key_v4a(
+        #[cfg(feature = "sig4a")]
+        let v4a_expected = generate_signing_key_v4a(
             env.aws_secret_key.as_str(),
             time,
             env.aws_region.as_str(),
             "aws4_request",
-        );*/
+        );
 
+        calculate_string_to_sign()
+        
         request.local_cache(|| HmacCheckResult(true));
     }
 
